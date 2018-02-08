@@ -1,10 +1,4 @@
-% Set iterations
-iter = 50;                %iterations
-count = 0;                %iteration counter
-change(1) = 10;           %initial value
-cdest = 0.007;            %Cd estimation
-
-% Constants
+%% Setting parameters
 R = 1717;             % [ft lbf / slug R]
 m = 2000;             % Numerical integration divisor
 
@@ -23,20 +17,16 @@ gamma = 1.4;              % ratio of air specific heats
 w = 1                 % rake height
 
 % Take Measurements (mean over 5000 samples) %
-pt0 =                % freestream total pressure
-ptwake =             % avg total pressure in wake
+dpt = ;         % Average total pressure deficit in wake
+
 T0 =                 % freestream temperature
 q0 =                 % freestream dynamic pressure
+rho0 = % freestream density
 
-% Reduce Data %
-p0 = pt0 - q0;              % freestream static pressure
-rho0 = p0/(T0*R);         % Freestream density of air
+% Reduce Data
 V = sqrt((2*q0)/rho0);    % Freestream velocity
 a = sqrt(gamma*R*T0);     % Speed of sound
 M = V/a;                  % Mach number
-dpt = pt0 - ptwake;         % Average total pressure deficit in wake
-cdold = 1;               % Old value of the profile Cd
-cdnew = cdest;         % New value of the profile Cd
 
 % Absolute Viscosity Corrected for Temperature
 mu = (10^-10*.317)*(T0)^1.5*(734.7/(T0 + 216));
@@ -59,10 +49,20 @@ dp = (-1.33e-6*Re + 4.36)*((tc)/(0.77 + 3.1*ksi).^2)*q0;
 % tube center from equation 2.12 from Plaisance
 dptcor_temp = (2*0.131*Do + 2*0.0821*Di)*q0/(w*chord);
 
+%% Preparing for iterations
+iter = 50;                %iterations
+change(1) = 10;           %initial value
+cdest = 0.007;            %Cd estimation
+
 i = 1;
+count = 1;                %iteration counter
 while (change(i) >= 0.001 && count < iter)
-    count = count + 1;
-    cdold = cdnew(i);
+
+    if count == 1
+        cdold = cdest;
+    else
+        cdold = cdnew(i - 1);
+    end
     
     % eta calculation, Equation 4.7 from Plaisance
     eta(i) = (-1.08e-12*Re^2 + 3.35e-6*Re + 4.15)*sqrt(cdold*(tc))/(ksi + 0.3);
@@ -107,24 +107,7 @@ while (change(i) >= 0.001 && count < iter)
     
     % change in value through iterations
     change(i) = abs(cdold - cdnew(i))/cdnew(i); 
-    
-    pt2max(i) = pt0 - eta(i)*q0; %maximum pressure loss in wake
-    p2 = p0 + dp; %static pressure in wake
-    
-    cdimax(i) = sqrt((pt2max(i) - p2)/q0)*(1 - sqrt((pt2max(i) - p0)/q0))/chord;
-    
-end
 
-c_d(i) = cdnew(i);
-if(count == Max_Iter)
-    c_d(i) = c_d(i) + 10;
+    i = i + 1;
+    count = count + 1;
 end
-
-% Iterations(i) = count;
-% cd*1000-5.7298;
-% F-0.8655;
-% c_l = ((2 * W) / ( rho0 * V^2 * S));
-% c_d;
-% F;
-% Iterations;
-% change;

@@ -16,11 +16,14 @@ idx = (x-30:x);
 
 try
     plot(idx, inH2O(idx), 'o-')
-    title(sprintf('%.3f inH2O',inH2O(x)),'FontSize',36)
+    title(sprintf('%.3f inH2O',inH2O(x)),'FontSize',48)
 catch
     plot(inH2O, 'o-')
-    title(sprintf('%.3f inH2O',inH2O(x)),'FontSize',36)
+    title(sprintf('%.3f inH2O',inH2O(x)),'FontSize',48)
 end
+
+ylim([-0.1 0.25])
+grid minor
 pause(0.001)
 
 
