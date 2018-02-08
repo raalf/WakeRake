@@ -1,11 +1,14 @@
+clc
+clear
+
 %% Setting parameters
 R = 1717;             % [ft lbf / slug R]
 m = 2000;             % Numerical integration divisor
 
 % Airfoil Specific 
 tc = 0.1                % thickness ratio of the airfoil 
-c = 0.4                 % chord length of airfoil
-ksi = 0.15*c              % wakerake distance behind airfoil (recommend 0.15c)
+chord = 0.4                 % chord length of airfoil
+ksi = 0.15*chord              % wakerake distance behind airfoil (recommend 0.15c)
 
 % Pitot tube specific
 Do = 0.00262;               % outer pitot tube diameter
@@ -16,17 +19,17 @@ l = .088;                    % length of rake tubes
 gamma = 1.4;              % ratio of air specific heats
 w = 1                 % rake height
 
-% Take Measurements (mean over 5000 samples) %
-dpt = ;         % Average total pressure deficit in wake
+%% Tunnel Measurements (From LabJack)
+dpt = .07;         % Average total pressure deficit in wake
 
-T0 =                 % freestream temperature
-q0 =                 % freestream dynamic pressure
-rho0 = % freestream density
+T0 = 80;                % freestream temperature
+q0 = 5                % freestream dynamic pressure
+rho0 = 0.022% freestream density
 
-% Reduce Data
+%% Reduce Data
 V = sqrt((2*q0)/rho0);    % Freestream velocity
 a = sqrt(gamma*R*T0);     % Speed of sound
-M = V/a;                  % Mach number
+mach = V/a;                  % Mach number
 
 % Absolute Viscosity Corrected for Temperature
 mu = (10^-10*.317)*(T0)^1.5*(734.7/(T0 + 216));
@@ -81,7 +84,11 @@ while (change(i) >= 0.001 && count < iter)
         y = -0.5*zeta(i) + k*dy;
         inter = (cos(pi*y/(zeta(i))))^2;
         inter2 = (cos(pi*(y + dy)/(zeta(i))))^2;
-        sum = sum + 0.5*(sqrt(1 - dp(i)/q0(i) - eta(i)*inter)*(1 - sqrt(1 - eta(i)*inter))+ sqrt(1 - dp(i)/q0(i) - eta(i)*inter2)*(1 - sqrt(1 - eta(i)*inter2)))*dy;
+        sum = sum + 0.5*(sqrt(1 - dp/q0 - eta(i)*inter)*...
+            (1 - sqrt(1 - eta(i)*inter)) + ...
+            sqrt(1 - dp/q0 - eta(i)*inter2)*...
+            (1 - sqrt(1 - eta(i)*inter2)))*dy;
+    
     end
     
     % Integrating factor  eq. 2.11
@@ -106,7 +113,7 @@ while (change(i) >= 0.001 && count < iter)
     cdnew(i) = cdnew(i)*cor;
     
     % change in value through iterations
-    change(i) = abs(cdold - cdnew(i))/cdnew(i); 
+    change(i + 1) = abs(cdold - cdnew(i))/cdnew(i); 
 
     i = i + 1;
     count = count + 1;
