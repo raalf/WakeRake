@@ -1,7 +1,10 @@
-clc
+function [cdnew] = fcnWakeRakeMetric( dpt, T0, q0, rho0 )
 
-clear
-
+%% Tunnel Measurements (From LabJack)
+% dpt = .07;             % Average total pressure deficit in wake [Pascal]
+% T0 = 293;              % freestream temperature [Kelvin]
+% q0 = 5;                % freestream dynamic pressure [Pascal]
+% rho0 = 1.225;          % freestream density [kg/m^3]
 
 
 %% Setting parameters
@@ -29,15 +32,6 @@ l = .088;                 % length of rake tubes [meter]
 % Other %
 gamma = 1.4;          % ratio of air specific heats
 w = .15;              % rake height [meter]
-
-
-
-%% Tunnel Measurements (From LabJack)
-
-dpt = .07;             % Average total pressure deficit in wake [Pascal]
-T0 = 293;              % freestream temperature [Kelvin]
-q0 = 5;                % freestream dynamic pressure [Pascal]
-rho0 = 1.225;          % freestream density [kg/m^3]
 
 
 
@@ -101,104 +95,106 @@ i = 1;
 count = 1;                %iteration counter
 
 while (change(i) >= 0.001 && count < iter)
-
     
-
+    
+    
     if count == 1
-
+        
         cdold = cdest;
-
+        
     else
-
+        
         cdold = cdnew(i - 1);
-
+        
     end
-
     
-
+    
+    
     % eta calculation, Equation 4.7 from Plaisance
-
+    
     eta(i) = (-1.08e-12*Re^2 + 3.35e-6*Re + 4.15)*sqrt(cdold*(tc))/(ksi + 0.3);
-
     
-
+    
+    
     % zeta calculation, Equation 4.5 from Plaisance
-
+    
     zeta(i) = zeta_temp.*sqrt(cdold).*zeta_temp2;
-
     
-
+    
+    
     % total pressure deficit correction, Equation 2.12 from Plaisance
-
-    dptcor(i) = 2*eta(i)*dptcor_temp;
-
-    dptnew = dpt + dptcor(i);
-
     
-
+    dptcor(i) = 2*eta(i)*dptcor_temp;
+    
+    dptnew = dpt + dptcor(i);
+    
+    
+    
     % trapezoidal rule integration
-
+    
     dy = zeta(i)/m;
-
+    
     sum = 0;
-
+    
     for k = 0:m-1
-
+        
         y = -0.5*zeta(i) + k*dy;
-
+        
         inter = (cos(pi*y/(zeta(i))))^2;
-
+        
         inter2 = (cos(pi*(y + dy)/(zeta(i))))^2;
-
+        
         sum = sum + 0.5*(sqrt(1 - dp/q0 - eta(i)*inter)*...
             (1 - sqrt(1 - eta(i)*inter)) + ...
             sqrt(1 - dp/q0 - eta(i)*inter2)*...
             (1 - sqrt(1 - eta(i)*inter2)))*dy;
-
         
-
+        
+        
     end
-
     
-
+    
+    
     % Integrating factor  eq. 2.11
     F(i) = 4*sum/(eta(i)*zeta(i));
-
     
-
+    
+    
     % The new uncorrected value of the profile drag coefficient eq. 2.7
     cdnew(i) = F(i)*w*dptnew/(q0);
     sum2 = 0;
-
     
-
+    
+    
     for k = 0:m-1
-
+        
         y = -0.5*zeta(i) + k*dy;
-
+        
         inter = (cos(pi*y/(zeta(i))))^2;
-
+        
         inter2 = (cos(pi*(y+dy)/(zeta(i))))^2;
-
+        
         sum2 = sum2 + 0.5*(sqrt(1 - dp/q0 - eta(i)*inter)*(1 - sqrt(1 - eta(i)*inter))*...
             (1 + (mach^2)/8*(3*dp/q0 + 3 - 2*gamma - 2*(1 - eta(i)*inter) - (2*gamma - 1)*sqrt(1 - eta(i)*inter))) +...
             sqrt(1 - dp/q0 - eta(i)*inter2)*(1 - sqrt(1 - eta(i)*inter2))*...
             (1 + (mach^2)/8*(3*dp/q0 + 3 - 2*gamma - 2*(1 - eta(i)*inter2) - (2*gamma - 1)*sqrt(1 - eta(i)*inter2))))*dy;
-
+        
     end
-
     
-
+    
+    
     % compressibility correction
     cor = sum2/sum;
     cdnew(i) = cdnew(i)*cor;
-
     
-
+    
+    
     % change in value through iterations
     change(i + 1) = abs(cdold - cdnew(i))/cdnew(i);
-
+    
     i = i + 1;
     count = count + 1;
+    
+end
 
 end
